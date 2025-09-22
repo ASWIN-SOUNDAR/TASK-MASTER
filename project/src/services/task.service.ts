@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Task, TaskFormData } from '../models/task.model';
+import { Task, TaskFormData, Comment } from '../models/task.model';
 
 @Injectable({
   providedIn: 'root'
@@ -43,7 +43,11 @@ export class TaskService {
           ...task,
           dueDate: new Date(task.dueDate),
           createdAt: new Date(task.createdAt),
-          updatedAt: new Date(task.updatedAt)
+          updatedAt: new Date(task.updatedAt),
+          comments: (task.comments || []).map((c: any) => ({
+            ...c,
+            createdAt: new Date(c.createdAt)
+          }))
         }));
         this.tasksSubject.next(tasks);
       }
@@ -63,7 +67,8 @@ export class TaskService {
       status: taskData.status,
       dueDate: new Date(taskData.dueDate).toISOString(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      comments: []
     };
 
     try {
@@ -127,6 +132,58 @@ export class TaskService {
       await this.loadTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
+    }
+  }
+
+  async addComment(taskId: string, commentText: string): Promise<void> {
+    const task = this.getTaskById(taskId);
+    if (!task) return;
+
+    const newComment: Comment = {
+      id: this.generateId(),
+      text: commentText,
+      createdAt: new Date()
+    };
+
+    const updatedComments = [...task.comments, newComment];
+
+    try {
+      const { error } = await this.supabase
+        .from('tasks')
+        .update({ comments: updatedComments })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error adding comment:', error);
+        return;
+      }
+
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  }
+
+  async deleteComment(taskId: string, commentId: string): Promise<void> {
+    const task = this.getTaskById(taskId);
+    if (!task) return;
+
+    const updatedComments = task.comments.filter(c => c.id !== commentId);
+
+    try {
+      const { error } = await this.supabase
+        .from('tasks')
+        .update({ comments: updatedComments })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error deleting comment:', error);
+        return;
+      }
+
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
     }
   }
 

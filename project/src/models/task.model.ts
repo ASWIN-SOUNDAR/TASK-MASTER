@@ -1,3 +1,9 @@
+export interface Comment {
+  id: string;
+  text: string;
+  createdAt: Date;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -7,6 +13,7 @@ export interface Task {
   dueDate: Date;
   createdAt: Date;
   updatedAt: Date;
+  comments: Comment[];
 }
 
 export interface TaskFormData {

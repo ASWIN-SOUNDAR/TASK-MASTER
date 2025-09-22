@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TaskService } from '../../services/task.service';
 import { Task } from '../../models/task.model';
@@ -7,7 +8,7 @@ import { Task } from '../../models/task.model';
 @Component({
   selector: 'app-task-details',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div class="details-container" *ngIf="task; else notFound">
       <div class="details-header">
@@ -158,6 +159,28 @@ import { Task } from '../../models/task.model';
               <strong>Task ID:</strong>
               <span class="task-id">{{ task.id }}</span>
             </div>
+          </div>
+        </div>
+
+        <div class="comments-section">
+          <h3>Comments</h3>
+          <div class="comments-list">
+            <div *ngFor="let comment of task.comments" class="comment">
+              <p>{{ comment.text }}</p>
+              <div class="comment-meta">
+                <small>{{ comment.createdAt | date:'medium' }}</small>
+                <button (click)="deleteComment(comment.id)" class="btn btn-danger btn-sm">🗑️ Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="add-comment">
+            <textarea
+              [(ngModel)]="newComment"
+              placeholder="Add a comment..."
+              rows="3"
+              class="comment-input"
+            ></textarea>
+            <button (click)="addComment()" class="btn btn-primary">Add Comment</button>
           </div>
         </div>
       </div>
@@ -398,6 +421,72 @@ import { Task } from '../../models/task.model';
       border-bottom: none;
     }
 
+    .comments-section h3 {
+      color: #333;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .comments-list {
+      margin-bottom: 2rem;
+    }
+
+    .comment {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #e1e5e9;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1rem;
+    }
+
+    .comment p {
+      margin: 0 0 1rem 0;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .comment-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .comment-meta small {
+      color: #666;
+    }
+
+    .add-comment {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid #e1e5e9;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .comment-input {
+      width: 100%;
+      padding: 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      resize: vertical;
+    }
+
+    .comment-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
     .task-id {
       font-family: monospace;
       background: #e1e5e9;
@@ -631,5 +720,22 @@ export class TaskDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/tasks']);
+  }
+
+  newComment: string = '';
+
+  addComment(): void {
+    if (!this.task || !this.newComment.trim()) return;
+
+    this.taskService.addComment(this.task.id, this.newComment.trim());
+    this.newComment = '';
+  }
+
+  deleteComment(commentId: string): void {
+    if (!this.task) return;
+
+    if (confirm('Are you sure you want to delete this comment?')) {
+      this.taskService.deleteComment(this.task.id, commentId);
+    }
   }
 }

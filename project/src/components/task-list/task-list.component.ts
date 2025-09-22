@@ -57,28 +57,35 @@ import { map } from 'rxjs/operators';
           <div class="task-header">
             <h3 class="task-title">{{ task.title }}</h3>
             <div class="task-actions">
-              <button 
+              <button
                 (click)="toggleTaskStatus(task)"
                 class="btn btn-icon"
                 [title]="task.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'"
               >
                 {{ task.status === 'completed' ? '↩️' : '✅' }}
               </button>
-              <a 
-                [routerLink]="['/task', task.id]" 
+              <button
+                (click)="toggleCommentForm(task.id)"
+                class="btn btn-icon"
+                [title]="commentFormOpen[task.id] ? 'Cancel comment' : 'Add comment'"
+              >
+                💬
+              </button>
+              <a
+                [routerLink]="['/task', task.id]"
                 class="btn btn-icon"
                 title="View details"
               >
                 👁️
               </a>
-              <a 
-                [routerLink]="['/edit-task', task.id]" 
+              <a
+                [routerLink]="['/edit-task', task.id]"
                 class="btn btn-icon"
                 title="Edit task"
               >
                 ✏️
               </a>
-              <button 
+              <button
                 (click)="deleteTask(task.id)"
                 class="btn btn-icon btn-danger"
                 title="Delete task"
@@ -89,6 +96,40 @@ import { map } from 'rxjs/operators';
           </div>
 
           <p class="task-description">{{ task.description }}</p>
+
+          <div class="task-comments" *ngIf="task.comments && task.comments.length > 0">
+            <div class="comment-count">💬 {{ task.comments.length }} comment{{ task.comments.length > 1 ? 's' : '' }}</div>
+            <div class="latest-comment">
+              <small>{{ task.comments[task.comments.length - 1].text | slice:0:50 }}{{ task.comments[task.comments.length - 1].text.length > 50 ? '...' : '' }}</small>
+            </div>
+          </div>
+
+          <div class="comment-form" *ngIf="commentFormOpen[task.id]">
+            <div class="comment-input-container">
+              <textarea
+                [(ngModel)]="newCommentText[task.id]"
+                placeholder="Add a comment..."
+                class="comment-input"
+                rows="2"
+                maxlength="500"
+              ></textarea>
+              <div class="comment-actions">
+                <button
+                  (click)="addComment(task.id)"
+                  class="btn btn-small btn-primary"
+                  [disabled]="!newCommentText[task.id]?.trim()"
+                >
+                  Add Comment
+                </button>
+                <button
+                  (click)="toggleCommentForm(task.id)"
+                  class="btn btn-small btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
 
           <div class="task-meta">
             <span class="priority-badge" [class]="'priority-' + task.priority">
@@ -242,11 +283,77 @@ import { map } from 'rxjs/operators';
       overflow: hidden;
     }
 
-    .task-meta {
+    .task-comments {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e1e5e9;
+    }
+
+    .comment-count {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .latest-comment small {
+      color: #666;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .comment-form {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e1e5e9;
+    }
+
+    .comment-input-container {
       display: flex;
+      flex-direction: column;
       gap: 0.75rem;
-      flex-wrap: wrap;
-      align-items: center;
+    }
+
+    .comment-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e1e5e9;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 60px;
+      transition: border-color 0.3s ease;
+    }
+
+    .comment-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .comment-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .btn-small {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      color: #334155;
     }
 
     .priority-badge, .status-badge {
@@ -405,6 +512,8 @@ export class TaskListComponent implements OnInit {
   filterStatus: string = '';
   filterPriority: string = '';
   filteredTasks$: Observable<Task[]> = new Observable();
+  commentFormOpen: { [taskId: string]: boolean } = {};
+  newCommentText: { [taskId: string]: string } = {};
 
   constructor(private taskService: TaskService) {}
 
@@ -463,5 +572,21 @@ export class TaskListComponent implements OnInit {
 
   isOverdue(task: Task): boolean {
     return task.status !== 'completed' && new Date() > task.dueDate;
+  }
+
+  toggleCommentForm(taskId: string): void {
+    this.commentFormOpen[taskId] = !this.commentFormOpen[taskId];
+    if (!this.commentFormOpen[taskId]) {
+      this.newCommentText[taskId] = '';
+    }
+  }
+
+  async addComment(taskId: string): Promise<void> {
+    const commentText = this.newCommentText[taskId]?.trim();
+    if (!commentText) return;
+
+    await this.taskService.addComment(taskId, commentText);
+    this.newCommentText[taskId] = '';
+    this.commentFormOpen[taskId] = false;
   }
 }

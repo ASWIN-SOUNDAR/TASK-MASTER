@@ -9,8 +9,12 @@ CREATE TABLE IF NOT EXISTS tasks (
     status TEXT NOT NULL CHECK (status IN ('pending', 'in-progress', 'completed')),
     "dueDate" TIMESTAMPTZ NOT NULL,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    comments JSONB DEFAULT '[]'::jsonb
 );
+
+-- Add comments column if it doesn't exist (for existing tables)
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS comments JSONB DEFAULT '[]'::jsonb;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
