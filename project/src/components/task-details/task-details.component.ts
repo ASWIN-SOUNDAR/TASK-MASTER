@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TaskService } from '../../services/task.service';
 import { Task } from '../../models/task.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-task-details',
@@ -630,8 +631,9 @@ import { Task } from '../../models/task.model';
     }
   `]
 })
-export class TaskDetailsComponent implements OnInit {
+export class TaskDetailsComponent implements OnInit, OnDestroy {
   task: Task | undefined;
+  private subscription: Subscription = new Subscription();
 
   constructor(
     private route: ActivatedRoute,
@@ -642,8 +644,15 @@ export class TaskDetailsComponent implements OnInit {
   ngOnInit(): void {
     const taskId = this.route.snapshot.paramMap.get('id');
     if (taskId) {
-      this.task = this.taskService.getTaskById(taskId);
+      // Subscribe to tasks observable to get the task once loaded
+      this.subscription = this.taskService.tasks$.subscribe(tasks => {
+        this.task = tasks.find(task => task.id === taskId);
+      });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 
   isOverdue(): boolean {
