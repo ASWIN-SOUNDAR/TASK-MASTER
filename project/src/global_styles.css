@@ -101,6 +101,21 @@ button {
 @media (max-width: 640px) {
   .sm-hidden { display: none; }
   .sm-block { display: block; }
+
+  .container {
+    padding: 0 0.5rem;
+  }
+
+  /* Ensure touch targets are at least 44px */
+  button, input, textarea, select, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Adjust typography for small screens */
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
 }
 
 @media (max-width: 768px) {
